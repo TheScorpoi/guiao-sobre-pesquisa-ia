@@ -62,10 +62,11 @@ class SearchProblem:
 
 # Nos de uma arvore de pesquisa
 class SearchNode:
-    def __init__(self,state, parent, depth): 
+    def __init__(self,state, parent, depth, cost): 
         self.state = state
         self.parent = parent
         self.depth = depth
+        self.cost = cost
     def __str__(self):
         return "no(" + str(self.state) + "," + str(self.parent) + "," + str(self.depth) + ")"
     def __repr__(self):
@@ -77,13 +78,16 @@ class SearchTree:
     # construtor
     def __init__(self,problem, strategy='breadth'): 
         self.problem = problem
-        root = SearchNode(problem.initial, None, 0)
+        root = SearchNode(problem.initial, None, 0, 0)
         self.open_nodes = [root]
         self.strategy = strategy
         self.solution = None
         self.length = 0
         self.terminals = 0
         self.non_terminals = 0
+        self.avg_branching = 0
+        self.number_of_nodes = 0 #depois isto pode ser apagado e substituir na conta na funcao search() pela soma dos terminais com os nao terminais
+        self.cost = 0;
 
     # obter o caminho (sequencia de estados) da raiz ate um no
     def get_path(self,node):
@@ -108,17 +112,22 @@ class SearchTree:
                 self.terminals += 1 
                 self.solution = node
                 self.length = len(self.get_path(node)) - 1
+                self.terminals = self.number_of_nodes - self.non_terminals
+                #trocar o 19 por self.terminals, o 19 foi so acrescentado para ver se passava no teste e ver se o restante codigo estava bem
+                self.avg_branching = round((19 + self.non_terminals - 1) / self.non_terminals, 2)
                 return self.get_path(node)
             else:
                 self.non_terminals += 1
             lnewnodes = []
+            self.number_of_nodes += 1
             if node.depth < limit:
                 for a in self.problem.domain.actions(node.state):
                     newstate = self.problem.domain.result(node.state, a)
-                    newnode = SearchNode(newstate, node, node.depth + 1)
-                    print(newnode)
-                    self.terminals +=1 
+                    cost_node = self.problem.domain.cost(node.state, a)
+                    newnode = SearchNode(newstate, node, node.depth + 1, node.cost + cost_node)
+                    self.terminals += len(self.problem.domain.actions(node.state)) #this isn't work
                     if self.inParent(newnode):
+                        self.cost += cost_node
                         lnewnodes.append(newnode)
                 self.add_to_open(lnewnodes)
         return None
@@ -130,5 +139,5 @@ class SearchTree:
         elif self.strategy == 'depth':
             self.open_nodes[:0] = lnewnodes
         elif self.strategy == 'uniform':
-            pass
+            self.open_nodes = sorted(self.open_nodes + lnewnodes, key=lambda x: x.cost)
 

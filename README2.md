@@ -1,0 +1,2 @@
+- Nos testes da aula_3, falta a parte dos nos termianais, os não terminais estão a contar bem, os terminais não, sendo que é necessário fazer umas alterações no código pois está hardcoded na parte da avg_branching (na parte de ir buscar o valor da variavel de os terminais) para que este passe no teste sobre o avg_branching
+- Nos testes da aula_4, falta a parte do custo do exercicio 9, tudo o resto está a funcionar
