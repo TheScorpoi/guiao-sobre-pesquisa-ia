@@ -34,6 +34,8 @@ class Predicate:
             return type(self)(assign[la[0]])
         # add other cases if needed
         return type(self)(assign[la[0]],assign[la[1]])
+    def __hash__(self):
+        return hash(str(self))
 
 
 # STRIPS operators
@@ -93,7 +95,12 @@ class STRIPS(SearchDomain):
     # Result of a given "action" in a given "state"
     # ( returns None, if the action is not applicable in the state)
     def result(self, state, action):
-        pass
+        if all([p in state for p in action.pc]):
+            newstate = [p for p in state if p not in action.neg]
+            newstate.extend(action.pos)
+            return set(newstate)
+         
+        return None
 
     def cost(self, state, action):
         return 1
@@ -103,7 +110,7 @@ class STRIPS(SearchDomain):
 
     # Checks if a given "goal" is satisfied in a given "state"
     def satisfies(self, state, goal):
-        pass
+        return all([p in state for p in goal])
 
 
 

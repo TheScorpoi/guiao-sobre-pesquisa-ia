@@ -90,8 +90,7 @@ goal_state    = [ Floor(c), On(d,c), On(e,d), On(a,e), Floor(b) ]
 #  |  ( )           |a|
 #  |                |e|
 #  |                |d|
-# _|__________|b|___|c|___    
-#
+# _|__________|b|___|c|___
 
 
 
@@ -105,18 +104,17 @@ bwdomain = STRIPS()
 
 print('Actions:',bwdomain.actions(initial_state))
 
-"""
+
 # uncomment to test
+if __name__ == '__main__':
 
-inittime = time.time()
+    inittime = time.time()
 
-p = SearchProblem(bwdomain,initial_state,goal_state)
-t = SearchTree(p)
-t.search()
+    p = SearchProblem(bwdomain,initial_state,goal_state)
+    t = SearchTree(p)
+    t.search()
 
-print(t.plan)
-print('time=',time.time()-inittime)
-print(len(t.open_nodes),' nodes')
-"""
-
+    print(t.plan)
+    print('time=',time.time()-inittime)
+    print(len(t.open_nodes),' nodes')
 

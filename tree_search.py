@@ -13,6 +13,7 @@
 #  Inteligência Artificial, 2014-2019
 
 from abc import ABC, abstractmethod
+import math
 
 # Dominios de pesquisa
 # Permitem calcular
@@ -60,15 +61,19 @@ class SearchProblem:
     def goal_test(self, state):
         return self.domain.satisfies(state,self.goal)
 
-# Nos de uma arvore de pesquisa
 class SearchNode:
-    def __init__(self,state, parent, depth, cost): 
+    def __init__(self,state,parent, action=None): 
         self.state = state
         self.parent = parent
-        self.depth = depth
-        self.cost = cost
+        self.cost = 0 
+        self.heuristic = 0
+        self.action = action
+        if parent == None:
+            self.depth = 0
+        else:
+            self.depth = self.parent.depth + 1
     def __str__(self):
-        return "no(" + str(self.state) + "," + str(self.parent) + "," + str(self.depth) + ")"
+        return "no(" + str(self.state) + "," + str(self.parent) + ")"
     def __repr__(self):
         return str(self)
 
@@ -78,16 +83,18 @@ class SearchTree:
     # construtor
     def __init__(self,problem, strategy='breadth'): 
         self.problem = problem
-        root = SearchNode(problem.initial, None, 0, 0)
+        root = SearchNode(problem.initial, None)
+        root.heuristic = self.problem.domain.heuristic(root.state, self.problem.goal)
         self.open_nodes = [root]
         self.strategy = strategy
         self.solution = None
         self.length = 0
-        self.terminals = 0
         self.non_terminals = 0
-        self.avg_branching = 0
-        self.number_of_nodes = 0 #depois isto pode ser apagado e substituir na conta na funcao search() pela soma dos terminais com os nao terminais
-        self.cost = 0;
+        self.cost = 0
+        
+        self.highest_cost_nodes = [root]
+        self.average_depth = root.depth
+
 
     # obter o caminho (sequencia de estados) da raiz ate um no
     def get_path(self,node):
@@ -96,40 +103,52 @@ class SearchTree:
         path = self.get_path(node.parent)
         path += [node.state]
         return(path)
+    
+    def get_plan(self, node):
+        if node.parent == None:
+            return []
+        plan = self.get_plan(node.parent)
+        plan += [node.action]
+        return(plan)
+    
+    def inParent(self,node):
+        states = self.get_path(node)
+        lastState = states.pop(-1)
+        if lastState in states:
+            return True
+        return False
+        
 
-    def inParent(self, node):
-        for city in self.get_path(node.parent):
-            if node.state == city:
-                return False
-        return True
-                
     # procurar a solucao
-    def search(self, limit=15):
-        #!qual é que deve ser o valor default d limit??????
+    def search(self, limit = math.inf):
         while self.open_nodes != []:
             node = self.open_nodes.pop(0)
             if self.problem.goal_test(node.state):
-                self.terminals += 1 
                 self.solution = node
                 self.length = len(self.get_path(node)) - 1
-                self.terminals = self.number_of_nodes - self.non_terminals
-                #trocar o 19 por self.terminals, o 19 foi so acrescentado para ver se passava no teste e ver se o restante codigo estava bem
-                self.avg_branching = round((19 + self.non_terminals - 1) / self.non_terminals, 2)
+                self.terminals = len(self.open_nodes) + 1
+                self.avg_branching = round((self.terminals+self.non_terminals-1)/self.non_terminals, 2)
+                self.average_depth = round(self.average_depth / (self.terminals + self.non_terminals), 2)
+                self.cost = node.cost
+                self.plan = self.get_plan(node)
                 return self.get_path(node)
-            else:
-                self.non_terminals += 1
             lnewnodes = []
-            self.number_of_nodes += 1
-            if node.depth < limit:
-                for a in self.problem.domain.actions(node.state):
-                    newstate = self.problem.domain.result(node.state, a)
-                    cost_node = self.problem.domain.cost(node.state, a)
-                    newnode = SearchNode(newstate, node, node.depth + 1, node.cost + cost_node)
-                    self.terminals += len(self.problem.domain.actions(node.state)) #this isn't work
-                    if self.inParent(newnode):
-                        self.cost += cost_node
-                        lnewnodes.append(newnode)
-                self.add_to_open(lnewnodes)
+            self.non_terminals+=1
+            for a in self.problem.domain.actions(node.state):
+                newstate = self.problem.domain.result(node.state,a)
+                newnode = SearchNode(newstate,node, a)
+                
+                if newnode.cost > self.highest_cost_nodes[0].cost:
+                        self.highest_cost_nodes = [newnode]
+                elif newnode.cost == self.highest_cost_nodes[0].cost   :
+                        self.highest_cost_nodes.append(newnode) 
+                    
+                self.average_depth += newnode.depth
+                if (not self.inParent(newnode)) and node.depth < limit:
+                    newnode.cost = node.cost + self.problem.domain.cost(node.state, (node.state, newstate))
+                    newnode.heuristic = self.problem.domain.heuristic(newnode.state, self.problem.goal)
+                    lnewnodes.append(newnode)
+            self.add_to_open(lnewnodes)
         return None
 
     # juntar novos nos a lista de nos abertos de acordo com a estrategia
@@ -139,5 +158,16 @@ class SearchTree:
         elif self.strategy == 'depth':
             self.open_nodes[:0] = lnewnodes
         elif self.strategy == 'uniform':
-            self.open_nodes = sorted(self.open_nodes + lnewnodes, key=lambda x: x.cost)
+            self.open_nodes = sorted(self.open_nodes + lnewnodes, key=lambda node: node.cost)
+        elif self.strategy == 'greedy':
+            self.open_nodes = sorted(self.open_nodes + lnewnodes, key=lambda node: node.heuristic)
+        elif self.strategy == 'a*':
+            self.open_nodes = sorted(self.open_nodes + lnewnodes, key=lambda node: node.heuristic + node.cost)
 
+    #verificar se node já foi pai no caminho que estamos a verificar
+    def inParent(self,node):
+        states = self.get_path(node)
+        lastState = states.pop(-1)
+        if lastState in states:
+            return True
+        return False
