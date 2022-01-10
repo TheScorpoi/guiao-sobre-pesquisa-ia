@@ -20,7 +20,7 @@ def make_domains(n):
     cols = [ i+1 for i in range(n) ]
     return { r:cols for r in queens }
 
-cs = ConstraintSearch(make_domains(4),make_constraint_graph(4))
+cs = ConstraintSearch(make_domains(8),make_constraint_graph(8))
 
 print(cs.search())
 

@@ -163,11 +163,3 @@ class SearchTree:
             self.open_nodes = sorted(self.open_nodes + lnewnodes, key=lambda node: node.heuristic)
         elif self.strategy == 'a*':
             self.open_nodes = sorted(self.open_nodes + lnewnodes, key=lambda node: node.heuristic + node.cost)
-
-    #verificar se node já foi pai no caminho que estamos a verificar
-    def inParent(self,node):
-        states = self.get_path(node)
-        lastState = states.pop(-1)
-        if lastState in states:
-            return True
-        return False
